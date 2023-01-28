@@ -62,6 +62,8 @@ class Game:
 
 # making game object
 game = Game()
+black_castle = [True, True]
+white_castle = [True, True]
 
 #images loading
 images = {}
@@ -99,7 +101,7 @@ def draw_board(board_to_draw):
     draw board draws the board 
     row in range defines how many availible rows
     col in range defines how many availible columns
-    piece color defines if the piece is white or black
+    piece color defines if the piece==white or black
     piece x and y define space on plane
   
    :param board_to_draw: gives it the board that needs to be drawn
@@ -117,8 +119,13 @@ def draw_board(board_to_draw):
 
             if current_piece != '':
                 screen.blit(images[current_piece], [piece_x, piece_y])
+    if game_over:
+      
+      checkmate_string = game.turn + "lost"      
 
+      checkmate_label = font.render(str(checkmate_string), True, "0xB22222")
 
+      screen.blit(checkmate_label, (200, 250))
 #to do: add checks for pins
 
 
@@ -209,6 +216,48 @@ def legal_move(current_piece, old_row, old_col, new_row, new_col, board):
           return True
         return row_change == col_change or old_row == new_row or old_col == new_col
     elif current_piece == "Black_King" or current_piece == "White_King":
+        if old_row == 7 and old_col == 4 and current_piece[:5] == "White":
+          if new_col == 6 and new_row == 7 and white_castle[1]:
+            if board[new_row][new_col] == "" and board[new_row][new_col - 1]  == "":
+              temp_board = copy.deepcopy(board)
+              temp_board[new_row][new_col - 1] = current_piece
+              temp_board[old_row][old_col] = ""
+              if evaluate_check(temp_board, current_piece[:5]):
+                del temp_board
+                return
+              del temp_board
+              return True
+          elif new_col == 2 and new_row == 7 and white_castle[0]:
+            if board[new_row][new_col] == "" and board[new_row][new_col - 1] == "" and board[new_row][new_col + 1]  == "":
+                temp_board = copy.deepcopy(board)
+                temp_board[new_row][new_col + 1] = current_piece
+                temp_board[old_row][old_col] = ""
+                if evaluate_check(temp_board, current_piece[:5]):
+                  del temp_board
+                  return
+                del temp_board
+                return True
+        if old_row == 0 and old_col == 4 and current_piece[:5] == "Black":
+          if new_col == 6 and new_row == 0 and black_castle[1]:
+            if board[new_row][new_col] == "" and board[new_row][new_col - 1]  == "":
+              temp_board = copy.deepcopy(board)
+              temp_board[new_row][new_col - 1] = current_piece
+              temp_board[old_row][old_col] = ""
+              if evaluate_check(temp_board, current_piece[:5]):
+                del temp_board
+                return
+              del temp_board
+              return True
+          elif new_col == 2 and new_row == 0 and black_castle[0]:
+            if board[new_row][new_col] == "" and board[new_row][new_col - 1] == "" and board[new_row][new_col + 1]  == "":
+                temp_board = copy.deepcopy(board)
+                temp_board[new_row][new_col + 1] = current_piece
+                temp_board[old_row][old_col] = ""
+                if evaluate_check(temp_board, current_piece[:5]):
+                  del temp_board
+                  return
+                del temp_board
+                return True
         return (row_change == 1 and col_change == 1) or (
             row_change == 1 and col_change == 0) or (row_change == 0
                                                      and col_change == 1)
@@ -217,11 +266,16 @@ def legal_move(current_piece, old_row, old_col, new_row, new_col, board):
                                                          and col_change == 2)
     elif current_piece[6:] == "Pawn":
         if current_piece[:5] == 'White':
-            if board[new_row +
-                          1][new_col] == board[old_row][old_col]:
+            if board[new_row + 1][new_col] == board[old_row][old_col]:
                 return True
-            elif board[new_row][new_col] != "" and (board[new_row + 1][new_col + 1] == board[old_row][old_col] or board[new_row + 1][new_col - 1 ] == board[old_row][old_col]):
+            elif board[new_row][new_col] != "" and new_col != 7 and new_col != 0 and (board[new_row + 1][new_col + 1] == board[old_row][old_col] or board[new_row + 1][new_col - 1 ] == board[old_row][old_col]):
+              
                 return True
+            elif board[new_row][new_col] != "" and new_col == 7 and board[new_row + 1][new_col - 1 ] == board[old_row][old_col]:
+              return True
+            elif board[new_row][new_col] != "" and new_col == 0 and board[new_row + 1][new_col + 1] == board[old_row][old_col]:
+              return True
+            # finished adding
             elif board[old_row][old_col] == board[6][
                     old_col] and board[new_row][
                         new_col] == "" and board[new_row + 1][
@@ -260,26 +314,144 @@ def legal_move(current_piece, old_row, old_col, new_row, new_col, board):
 
 def move(current_piece, old_row, old_col, new_row, new_col, board):
     """ 
-    move defines what move was made and makes sure that the old coordinate is empty and the new coordinate has the piece selected
+    move defines what move was made and makes sure that the old coordinate==empty and the new coordinate has the piece selected
   
-    current piece is used in move as the piece that is currently selected
+    current piece==used in move as the piece that==currently selected
     new_row and new_col verify that current_piece moved there
     old_row and old_col verify that the current_piece left that coordinate, as when a piece moves from a coordinate, another piece cannot be there.
     board makes sure that the other params have a plane to work on, additionally being changed by move
+    from 318 onward covers castling
     """
-    if legal_move(current_piece, old_row, old_col, new_row, new_col, board = board) is True:
+    if current_piece[6:] == "King":
+      if old_row == 7 and old_col == 4 and current_piece[:5] == "White":
+        if new_col == 6 and new_row == 7 and white_castle[1]:
+          if board[new_row][new_col] == "" and board[new_row][new_col - 1]  == "":
+          #this makes sure nothing is in the way between the king and the rook for kingside
+            temp_board = copy.deepcopy(board)
+            temp_board[new_row][new_col - 1] = current_piece
+            temp_board[old_row][old_col] = ""
+            if evaluate_check(temp_board, current_piece[:5]):
+              del temp_board
+              return
+            del temp_board
+            board[new_row][new_col] = current_piece
+            board[old_row][old_col] = ""
+            board[new_row][new_col - 1] = "White_Rook"
+            board[new_row][new_col + 1] = ""
+        elif new_col == 2 and new_row == 7 and white_castle[0]:
+          if board[new_row][new_col] == "" and board[new_row][new_col - 1] == "" and board[new_row][new_col + 1]  == "":
+              temp_board = copy.deepcopy(board)
+              temp_board[new_row][new_col + 1] = current_piece
+              temp_board[old_row][old_col] = ""
+              if evaluate_check(temp_board, current_piece[:5]):
+                del temp_board
+                return
+              del temp_board
+              board[new_row][new_col] = current_piece
+              board[old_row][old_col] = ""
+              board[new_row][new_col + 1] = "White_Rook"
+              board[new_row][new_col - 2] = ""
+      if old_row == 0 and old_col == 4 and current_piece[:5] == "Black":
+        if new_col == 6 and new_row == 0 and black_castle[1]:
+          if board[new_row][new_col] == "" and board[new_row][new_col - 1]  == "":
+            temp_board = copy.deepcopy(board)
+            temp_board[new_row][new_col - 1] = current_piece
+            temp_board[old_row][old_col] = ""
+            if evaluate_check(temp_board, current_piece[:5]):
+              del temp_board
+              return
+            del temp_board
+            board[new_row][new_col] = current_piece
+            board[old_row][old_col] = ""
+            board[new_row][new_col - 1] = "Black_Rook"
+            board[new_row][new_col + 1] = ""
+        elif new_col == 2 and new_row == 0 and black_castle[0]:
+          if board[new_row][new_col] == "" and board[new_row][new_col - 1] == "" and board[new_row][new_col + 1]  == "":
+              temp_board = copy.deepcopy(board)
+              temp_board[new_row][new_col + 1] = current_piece
+              temp_board[old_row][old_col] = ""
+              if evaluate_check(temp_board, current_piece[:5]):
+                del temp_board
+                return
+              del temp_board
+              board[new_row][new_col] = current_piece
+              board[old_row][old_col] = ""
+              board[new_row][new_col + 1] = "Black_Rook"
+              board[new_row][new_col - 2] = ""
+    if legal_move(current_piece, old_row, old_col, new_row, new_col, board = board)==True:
+        # if piece was king, make that color's castles illegal 0 is kingside castling 1 is queenside castling
+        if current_piece == "White_King":
+          white_castle[0] = False
+          white_castle[1] = False
+      ### 380-382 covers black king castling.
+        elif current_piece == "Black_King":
+          black_castle[0] = False
+          black_castle[1] = False
+      ### the following eight lines make it so that after a rook moves you can no longer castle with it.  It does this by locating each rook and checking if they move, and then marking their respective castle option as false.
+        elif current_piece == "White_Rook" and old_row == 7 and old_col == 7:
+          white_castle[1] = False
+        elif current_piece == "White_Rook" and old_row == 7 and old_col == 0:
+          white_castle[0] = False
+        elif current_piece == "Black_Rook" and old_row == 0 and old_col == 0:
+          black_castle[1] = False
+        elif current_piece == "Black_Rook" and old_row == 0 and old_col == 7:
+          black_castle[0] = False
+        #elif?
+        
+        
+          # only re-write the piece normally if it is not pawn promotion
         board[new_row][new_col] = current_piece
         board[old_row][old_col] = ""
+    
+      
 
+def promote_pawn(current_piece, new_row, new_col, color, board):
+  """
+  Asks the user in the console what piece they'd like to promote that pawn to.
+  Remove the pawn and replace it with the selected piece on that square.
+  """
+  while True:
+    
+    print(f"{color} pawn on col {new_col} promoted")
+    print("Queen, Rook, Bishop, or Knight?")
+    choice = input("Input your choice: ")
+    choice = choice.lower()
+    if (choice != "queen" and choice != "rook" and choice != "bishop" and choice != "knight"):
+      print("Mistake Made. Please retype.")
+      continue
+    else:
+      break
+  if color == "White":
+    if choice == "queen":
+      board[new_row][new_col] = "White_Queen"
+    elif choice == "rook":
+      board[new_row][new_col] = "White_Rook"
+    elif choice == "bishop":
+      board[new_row][new_col] = "White_Bishop"
+    elif choice == "knight":
+      board[new_row][new_col] = "White_Knight"  
+  if color == "Black":
+    if choice == "queen":
+      board[new_row][new_col] = "Black_Queen"
+    elif choice == "rook":
+      board[new_row][new_col] = "Black_Rook"
+    elif choice == "bishop":
+      board[new_row][new_col] = "Black_Bishop"
+    elif choice == "knight":
+      board[new_row][new_col] = "Black_Knight"  
+    
+    # new_piece = input("Promote to Queen, Rook, Knight, or Bishop? ") # gives error from happening multiple times
+  return board
+    
 
 def evaluate_check(board, color):
     """
-    evaluate check defines a board that is changed by finding out when a king is checked by another piece
+    evaluate check defines a board that==changed by finding out when a king==checked by another piece
 
     board serves the same function as before, being a fluctuating plane that pieces check on
     color makes sure that opposing sides always check opposing kings and not their own
 
-    returning as True tells the game that a king is in check and therefore restricts the player's quantity of moves next turn
+    returning as True tells the game that a king==in check and therefore restricts the player's quantity of moves next turn
     """
 
     r = 7
@@ -373,9 +545,9 @@ def availible_moves(current_piece, piece_row, piece_column, board):
     space_check = [piece_row - 1, piece_column - 1]
     #bishops and queens going northwest
     while space_check[0] >= 0 and space_check[1] >= 0:
-      if board[space_check[0]][space_check[1]] is "":
+      if board[space_check[0]][space_check[1]]=="":
         possible_moves.append([space_check[0], space_check[1]])
-      elif board[space_check[0]][space_check[1]][:5] is  current_piece[:5]:
+      elif board[space_check[0]][space_check[1]][:5]== current_piece[:5]:
         break
       else:
         possible_moves.append([space_check[0], space_check[1]])
@@ -387,9 +559,9 @@ def availible_moves(current_piece, piece_row, piece_column, board):
     space_check = [piece_row - 1, piece_column + 1]
     #bishops and queens going northeast
     while space_check[0] >= 0 and space_check[1] <= 7:
-      if board[space_check[0]][space_check[1]] is "":
+      if board[space_check[0]][space_check[1]]=="":
         possible_moves.append([space_check[0], space_check[1]])
-      elif board[space_check[0]][space_check[1]][:5] is  current_piece[:5]:
+      elif board[space_check[0]][space_check[1]][:5]== current_piece[:5]:
         break
       else:
         possible_moves.append([space_check[0], space_check[1]])
@@ -401,9 +573,9 @@ def availible_moves(current_piece, piece_row, piece_column, board):
     space_check = [piece_row + 1, piece_column + 1]
     #bishops and queens going southeast
     while space_check[0] <= 7 and space_check[1] <= 7:
-      if board[space_check[0]][space_check[1]] is "":
+      if board[space_check[0]][space_check[1]]=="":
         possible_moves.append([space_check[0], space_check[1]])
-      elif board[space_check[0]][space_check[1]][:5] is  current_piece[:5]:
+      elif board[space_check[0]][space_check[1]][:5]== current_piece[:5]:
         break
       else:
         possible_moves.append([space_check[0], space_check[1]])
@@ -415,9 +587,9 @@ def availible_moves(current_piece, piece_row, piece_column, board):
     space_check = [piece_row + 1, piece_column - 1]
     #bishops and queens going southwest
     while space_check[0] <= 7 and space_check[1] >= 0:
-      if board[space_check[0]][space_check[1]] is "":
+      if board[space_check[0]][space_check[1]]=="":
         possible_moves.append([space_check[0], space_check[1]])
-      elif board[space_check[0]][space_check[1]][:5] is  current_piece[:5]:
+      elif board[space_check[0]][space_check[1]][:5]== current_piece[:5]:
         break
       else:
         possible_moves.append([space_check[0], space_check[1]])
@@ -430,9 +602,9 @@ def availible_moves(current_piece, piece_row, piece_column, board):
     space_check = [piece_row, piece_column - 1]
     #rooks and queens going west
     while space_check[1] >= 0:
-      if board[space_check[0]][space_check[1]] is "":
+      if board[space_check[0]][space_check[1]]=="":
         possible_moves.append([space_check[0], space_check[1]])
-      elif board[space_check[0]][space_check[1]][:5] is  current_piece[:5]:
+      elif board[space_check[0]][space_check[1]][:5]== current_piece[:5]:
         break
       else:
         possible_moves.append([space_check[0], space_check[1]])
@@ -443,9 +615,9 @@ def availible_moves(current_piece, piece_row, piece_column, board):
     space_check = [piece_row, piece_column + 1]
     #rooks and queens going east
     while space_check[1] <= 7:
-      if board[space_check[0]][space_check[1]] is "":
+      if board[space_check[0]][space_check[1]]=="":
         possible_moves.append([space_check[0], space_check[1]])
-      elif board[space_check[0]][space_check[1]][:5] is  current_piece[:5]:
+      elif board[space_check[0]][space_check[1]][:5]== current_piece[:5]:
         break
       else:
         possible_moves.append([space_check[0], space_check[1]])
@@ -456,9 +628,9 @@ def availible_moves(current_piece, piece_row, piece_column, board):
     space_check = [piece_row - 1, piece_column]
     #rooks and queens going north
     while space_check[0] >= 0:
-      if board[space_check[0]][space_check[1]] is "":
+      if board[space_check[0]][space_check[1]]=="":
         possible_moves.append([space_check[0], space_check[1]])
-      elif board[space_check[0]][space_check[1]][:5] is  current_piece[:5]:
+      elif board[space_check[0]][space_check[1]][:5]== current_piece[:5]:
         break
       else:
         possible_moves.append([space_check[0], space_check[1]])
@@ -469,9 +641,9 @@ def availible_moves(current_piece, piece_row, piece_column, board):
     space_check = [piece_row + 1, piece_column]
     #rooks and queens going south
     while space_check[0] <= 7:
-      if board[space_check[0]][space_check[1]] is "":
+      if board[space_check[0]][space_check[1]]=="":
         possible_moves.append([space_check[0], space_check[1]])
-      elif board[space_check[0]][space_check[1]][:5] is  current_piece[:5]:
+      elif board[space_check[0]][space_check[1]][:5]== current_piece[:5]:
         break
       else:
         possible_moves.append([space_check[0], space_check[1]])
@@ -503,21 +675,63 @@ def availible_moves(current_piece, piece_row, piece_column, board):
         possible_moves.append([piece_row - 1, piece_column])
         if board[piece_row - 2][piece_column] == "":
           possible_moves.append([piece_row - 2, piece_column])
-      if board[piece_row - 1][piece_column - 1][:5] is "Black":
-        possible_moves.append([piece_row - 1, piece_column - 1])
-      if board[piece_row - 1][piece_column + 1][:5] is "Black":
-        possible_moves.append([piece_row - 1, piece_column + 1])
+      try:
+        if board[piece_row - 1][piece_column - 1][:5] == "Black":
+          possible_moves.append([piece_row - 1, piece_column - 1])
+      except:
+        pass
+      try:
+        if board[piece_row - 1][piece_column + 1][:5] == "Black":
+          possible_moves.append([piece_row - 1, piece_column + 1])
+      except:
+        pass
     else:
       if board[piece_row + 1][piece_column] == "":
         possible_moves.append([piece_row + 1, piece_column])
         if board[piece_row + 2][piece_column] == "":
           possible_moves.append([piece_row + 2, piece_column])
-      if board[piece_row + 1][piece_column - 1][:5] is "Black":
-        possible_moves.append([piece_row + 1, piece_column - 1])
-      if board[piece_row + 1][piece_column + 1][:5] is "Black":
-        possible_moves.append([piece_row + 1, piece_column + 1])
+      try:
+        if board[piece_row + 1][piece_column - 1][:5]=="White":
+          possible_moves.append([piece_row + 1, piece_column - 1])
+      except:
+        pass
+      try: 
+        if board[piece_row + 1][piece_column + 1][:5] == "White":
+          possible_moves.append([piece_row + 1, piece_column + 1])
+      except:
+        pass
   return possible_moves
-        
+
+
+  
+def checkmate(board, color):
+  #checkmate defines the end of the game, by scanning each piece to see if they can move
+  x = 0
+  y = 0
+  cm_piece = []
+  while y < 8:
+    while x < 8:
+      if board[y][x][:5] == color:
+        cm_piece.append([y, x])
+        #append adds the possible pieces
+      x += 1
+    x = 0 
+    y += 1
+    #y and x define the reach of the board
+  for space in cm_piece:
+    possible_moves = availible_moves(current_piece = board[space[0]][space[1]], piece_row = space[0], piece_column = space[1], board = board)
+    #moves are defined by where the current piece can go
+    for current_move in possible_moves:
+      new_board = copy.deepcopy(board)
+      # the copy copies a board so it scans each move from there
+      move(current_piece = new_board[space[0]][space[1]], old_row = space[0], old_col = space[1], new_row = current_move[0], new_col = current_move[1], board = new_board)
+      #move==evaluated to see if we are still in check
+      if not evaluate_check(board = new_board, color = color):
+        return False
+      del new_board
+      #deleting the board saves memory and a new one==created anyway
+  return True
+
 def set_timer():
   user_text = ""
   while True:
@@ -555,6 +769,9 @@ future_board = copy.deepcopy(game.board)
 black_timer = Timer(minute = minutes, second = 0, x = 490, y = 5)
 white_timer = Timer(minute = minutes, second = 0, x = 490, y = 440)
 start_tick = pygame.time.get_ticks()
+
+
+
 #start of game_loop
 milliseconds = 0.0
 while not game_over:
@@ -602,6 +819,11 @@ while not game_over:
                         else:
                             print(f"Good to Go {game.turn}")
                             move(current_piece=game.board[selected[0]][selected[1]], old_row=selected[0], old_col=selected[1], new_row=row_clicked, new_col=col_clicked, board=game.board)
+                            if game.board[row_clicked][col_clicked] == "White_Pawn" and row_clicked == 0: # if white pawn reaches the end
+                              game.board = promote_pawn(game.board[row_clicked][col_clicked], row_clicked, col_clicked, game.board[row_clicked][col_clicked][:5], game.board)
+          
+                            elif game.board[row_clicked][col_clicked] == "Black_Pawn" and row_clicked == 7: # if white pawn reaches the end
+                              game.board = promote_pawn(game.board[row_clicked][col_clicked], row_clicked, col_clicked, game.board[row_clicked][col_clicked][:5], game.board)
                             if game.turn == 'White':
                                 game.turn = "Black"
                                 start_tick = pygame.time.get_ticks()
@@ -610,7 +832,9 @@ while not game_over:
                             elif game.turn == "Black":
                                 game.turn = 'White'
                                 start_tick = pygame.time.get_ticks()
-
+                            if checkmate(board = game.board, color = game.turn):
+                              
+                              game_over = True
                             selected = (-1, -1)
                             break
                     else:
@@ -635,10 +859,14 @@ while not game_over:
     white_timer.draw(screen)
     #screen.blit(black_bishop, (0, 0))
     pygame.display.update()
+
+
+print(f"Game==over. {game.turn} lost")
+
 """
 if selected -1,-1: piece unselected
 then change coords to selected piece
 
-if selected is a piece: piece 
+if selected==a piece: piece 
 
 """
