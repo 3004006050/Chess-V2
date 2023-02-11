@@ -51,6 +51,7 @@ class Game:
         self.col_conversion = {0 : "a", 1 : "b", 2 : "c", 3: "d", 4 : "e", 5 : "f", 6 : "g", 7 : "h"}
         self.half_move = -1
         self.whole_move = 1
+        self.evalw = 50
         self.board = [
             [
                 'Black_Rook', 'Black_Knight', 'Black_Bishop', 'Black_Queen',
@@ -1102,7 +1103,20 @@ while not game_over:
     white_timer.draw(screen)
     #eval timer
     pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(500, 95, 20, 350))
-    pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(500, 95, 20, 350 * game.get_evalw()/100))
+    game.evalw = game.get_evalw()
+    pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(500, 95, 20, 350 * game.evalw/100))
+    eval = stockfish.get_evaluation()
+    if eval["type"] != "cp":
+        moves_til_mate = abs(eval['value'])
+        mate_text = font.render(f"M{moves_til_mate}", 1, (255, 255, 255))
+        screen.blit(mate_text, (530, 240))
+    else:
+        font = pygame.font.SysFont("comicsans", 32, bold=True)
+        evaluationb = font.render(f"{100-game.evalw}", 1, (0, 0, 0))
+        evaluationw = font.render(f"{game.evalw}", 1, (255, 255, 255))
+        screen.blit(evaluationw, (530, 80))
+        screen.blit(evaluationb, (530, 400))
+
     #screen.blit(black_bishop, (0, 0))
     pygame.display.update()
 
