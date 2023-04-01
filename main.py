@@ -1,10 +1,11 @@
 from math import trunc
 from queue import Empty
 from tkinter import W
-from typing import Counter
+from typing import Counter, Self
 from xml.sax.handler import feature_namespace_prefixes
 from chessassets.readconfig import read_config
 import pygame
+import os
 import sys
 import copy
 from stockfish import Stockfish
@@ -49,6 +50,9 @@ class Game:
         self.black_castle = [True, True]
         self.white_castle = [True, True]
         self.col_conversion = {0 : "a", 1 : "b", 2 : "c", 3: "d", 4 : "e", 5 : "f", 6 : "g", 7 : "h"}
+        self.best_img = pygame.image.load(f'{os.getcwd()}\\chessassets\\feedback_icons\\best.png')
+        self.last_move = ""
+        self.best_move_hist = [] # keeps track of each turn's 3 best moves
         self.half_move = -1
         self.whole_move = 1
         self.evalw = 50
@@ -532,6 +536,9 @@ def move(current_piece, old_row, old_col, new_row, new_col, board):
                   new_row,
                   new_col,
                   board=board) == True:
+        
+        game.last_move = f"{game.col_conversion[old_col]}{old_row+1}{game.col_conversion[new_col]}{new_row+1}"
+        game.best_move_hist.append(stockfish.get_top_moves(3))
         if not white_castlet:
         
             game.white_castle[0] = False
@@ -602,7 +609,7 @@ def promote_pawn(current_piece, new_row, new_col, color, board):
 
         # new_piece = input("Promote to Queen, Rook, Knight, or Bishop? ") # gives error from happening multiple times
     return board
-
+pygame
 
 def evaluate_check(board, color):
     """
@@ -1102,10 +1109,14 @@ while not game_over:
     black_timer.draw(screen)
     white_timer.draw(screen)
     #eval timer
+    
     pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(500, 95, 20, 350))
     game.evalw = game.get_evalw()
     pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(500, 95, 20, 350 * game.evalw/100))
     eval = stockfish.get_evaluation()
+    # if self.last_move is in the second to last item of self.best_move_hist then blit best_img
+    if game.last_move in [x['Move'] for x in game.last_move[-2]]: # out of range error
+        screen.blit(game.best_img, (100, 100))
     if eval["type"] != "cp":
         moves_til_mate = abs(eval['value'])
         mate_text = font.render(f"M{moves_til_mate}", 1, (255, 255, 255))
