@@ -8,6 +8,7 @@ import pygame
 import os
 import sys
 import copy
+import time
 from stockfish import Stockfish
 stockfish = Stockfish("chessassets\stockfish-11-win\Windows\stockfish_20011801_32bit.exe") # pass in binary file location
 stockfish.update_engine_parameters(read_config())
@@ -56,11 +57,14 @@ class Game:
         self.good_img = pygame.image.load(f'{os.getcwd()}\\chessassets\\feedback_icons\\good.png').convert_alpha()
         self.good_img = pygame.transform.smoothscale(self.good_img, (100, 100))
         self.last_move = ""
+        self.last_time_recorded = time.time()
+        self.curr_time = time.time()
         self.best_move_hist = [] # keeps track of each turn's best move
         self.good_move_hist = [] # keeps track of each turn's 4 best moves
         self.half_move = -1
         self.whole_move = 1
-        self.evalw = 50
+        self.evalw = self.get_evalw()
+        self.eval = stockfish.get_evaluation()
         self.board = [
             [
                 'Black_Rook', 'Black_Knight', 'Black_Bishop', 'Black_Queen',
@@ -1124,25 +1128,30 @@ while not game_over:
     #eval timer
     
     pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(500, 95, 20, 350))
-    game.evalw = game.get_evalw()
+    game.curr_time = time.time()
+    if game.curr_time - game.last_time_recorded > 2.5 or game.turn != last_turn:
+        game.last_time_recorded = game.curr_time
+        game.evalw = game.get_evalw()
+        game.eval = stockfish.get_evaluation()
+    
     pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(500, 95, 20, 350 * game.evalw/100))
-    eval = stockfish.get_evaluation()
+    # eval = stockfish.get_evaluation()
     # if self.last_move is in the second to last item of self.best_move_hist then blit best_img
     # print("last move: " + game.last_move)
-    os.system('cls')
-    print("best move:", end=" ")
-    print(str(game.best_move_hist[-1])) # used to be -2 not -1
-    print("good moves:")
-    for good_move in game.good_move_hist[-1]:
-        print (str(good_move))
+    # os.system('cls')
+    # print("best move:", end=" ")
+    # print(str(game.best_move_hist[-1])) # used to be -2 not -1
+    # print("good moves:")
+    # for good_move in game.good_move_hist[-1]:
+    #     print (str(good_move))
     # if a move is the best move
     if game.last_move == game.best_move_hist[-1]:
         screen.blit(game.best_img, (550, 250), )
     # else if a move is in the top 4 best moves
     elif game.last_move in [x["Move"] for x in game.good_move_hist[-1] if x["Centipawn"] > 0]:
         screen.blit(game.good_img, (550, 250, ),)
-    if eval["type"] != "cp":
-        moves_til_mate = abs(eval['value'])
+    if game.eval["type"] != "cp":
+        moves_til_mate = abs(game.eval['value'])
         mate_text = font.render(f"M{moves_til_mate}", 1, (255, 255, 255))
         screen.blit(mate_text, (530, 240))
     else:
