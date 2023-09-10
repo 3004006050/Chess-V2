@@ -11,8 +11,8 @@ import sys
 import copy
 import time
 from stockfish import Stockfish
-
-stockfish = Stockfish("chessassets\stockfish-11-win\Windows\stockfish_20011801_32bit.exe") # pass in binary file location
+# pip list or pip3 list
+stockfish = Stockfish(r"D:\\Chess\\chessassets\\stockfish-11-win\\Windows\\stockfish_20011801_32bit.exe") # pass in binary file location
 stockfish.update_engine_parameters(read_config())
 
 #piece and screen defining
@@ -22,8 +22,9 @@ PIECE_SIZE = 60
 SCREEN_SIZE = [PIECE_SIZE * 8 + 200, PIECE_SIZE * 8]
 screen = pygame.display.set_mode(SCREEN_SIZE)
 pygame.display.set_caption('Chess')
-
-
+font = pygame.font.SysFont("comicsans", 64, bold=True)
+background_color = (139, 0, 0)
+en_passantable = None
 
 class Timer:
     def __init__(self, minute, second, x, y):
@@ -38,7 +39,6 @@ class Timer:
             self.second = 59
         else:
             self.second -= 1
-
     def draw(self, screen):
         timer_label = font.render(f"{self.minute}:{self.second}", 1,
                                 (178, 34, 34))
@@ -46,15 +46,16 @@ class Timer:
 
 
 class Game:
+    en_passantable = None
     #Game defines all pieces's strings and board, along with turning
     def __init__(self):
         self.black_castle = [True, True]
         self.white_castle = [True, True]
         self.last_move_possibilities = []
         self.col_conversion = {0 : "a", 1 : "b", 2 : "c", 3: "d", 4 : "e", 5 : "f", 6 : "g", 7 : "h"}
-        self.best_img = pygame.image.load(f'{os.getcwd()}\\chessassets\\feedback_icons\\best.png').convert_alpha()
+        self.best_img = pygame.image.load(f'{os.getcwd()}\chessassets\\feedback_icons\\best.png').convert_alpha()
         self.best_img = pygame.transform.smoothscale(self.best_img, (100, 100))
-        self.good_img = pygame.image.load(f'{os.getcwd()}\\chessassets\\feedback_icons\\good.png').convert_alpha()
+        self.good_img = pygame.image.load(f'{os.getcwd()}\chessassets\\feedback_icons\\good.png').convert_alpha()
         self.good_img = pygame.transform.smoothscale(self.good_img, (100, 100))
         self.last_move = ""
         self.last_time_recorded = time.time()
@@ -936,7 +937,7 @@ def checkmate(board, color):
     return True
 
 
-async def set_timer():
+def set_timer():
     user_text = ""
     while True:
         for event in pygame.event.get():
@@ -965,53 +966,31 @@ async def set_timer():
                 (((PIECE_SIZE * 8 + 200) - user_label.get_width()) / 2,
                 (((PIECE_SIZE * 8) / 2) - user_label.get_height() / 2)))
             instruction_label = font.render("Pick a control", 1, (178, 34, 34))
-            # TODO: await outside async error here?
             screen.blit(
                 instruction_label,
                 (((PIECE_SIZE * 8 + 200) - instruction_label.get_width()) / 2,
                 (((PIECE_SIZE * 8) / 2) - user_label.get_height() / 2) -
                 instruction_label.get_height()))
             pygame.display.update()
-            await asyncio.sleep(0)
 
 
 
-async def main():
+def game_loop():
     global game_over
-    global background_color
-    
-    en_passantable = None
-    # self.black_castle = [True, True]
-    # self.white_castle = [True, True]
-    # making game object
-
-    
-
-    #images loading
-    
-    for color in ['Black', 'White']:
-        for piece in ['King', 'Queen', 'Knight', 'Bishop', 'Rook', 'Pawn']:
-            name = color + '_' + piece
-            images[name] = pygame.image.load('chessassets/pieces/' + name + '.png')
-
-
-    #black_bishop = pygame.image.load("pieces/Black_Bishop.png")
-
-    minutes = await set_timer()
-    
-    selected = (-1, -1)
-    future_board = copy.deepcopy(game.board)
-    black_timer = Timer(minute=minutes, second=0, x=490, y=5)
-    white_timer = Timer(minute=minutes, second=0, x=490, y=440)
-    start_tick = pygame.time.get_ticks()
-
-    #start of game_loop
     milliseconds = 0.0
     last_turn = "white"
     last_pawns = game.find_pawns()
     game.best_move_hist += [stockfish.get_best_move(), stockfish.get_best_move()]
     game.good_move_hist += [stockfish.get_top_moves(4), stockfish.get_top_moves(4)]
     last_num_pieces = 32
+    minutes = set_timer()
+    game_over = False
+    selected = (-1, -1)
+    future_board = copy.deepcopy(game.board)
+    black_timer = Timer(minute=minutes, second=0, x=490, y=5)
+    white_timer = Timer(minute=minutes, second=0, x=490, y=440)
+    start_tick = pygame.time.get_ticks()
+    #start of game_loop
     while not game_over:
         if game.turn != last_turn:
             stockfish.set_fen_position(game.set_fen())
@@ -1180,7 +1159,6 @@ async def main():
 
         #screen.blit(black_bishop, (0, 0))
         pygame.display.update()
-        await asyncio.sleep(0)  # Very important, and keep it 0
 
     print(f"Game==over. {game.turn} lost")
     """
@@ -1190,5 +1168,49 @@ async def main():
     if selected==a piece: piece 
 
     """
+async def main():
+    global game_over 
+    global background_color
+    minutes = set_timer()
+    game_over = False
+    selected = (-1, -1)
+    future_board = copy.deepcopy(game.board)
+    black_timer = Timer(minute=minutes, second=0, x=490, y=5)
+    white_timer = Timer(minute=minutes, second=0, x=490, y=440)
+    start_tick = pygame.time.get_ticks()
+    en_passantable = None
+    # self.black_castle = [True, True]
+    # self.white_castle = [True, True]
+    # making game object
+
+    
+
+    #images loading
+    
+    for color in ['Black', 'White']:
+        for piece in ['King', 'Queen', 'Knight', 'Bishop', 'Rook', 'Pawn']:
+            name = color + '_' + piece
+            images[name] = pygame.image.load('chessassets/pieces/' + name + '.png')
+
+
+    #black_bishop = pygame.image.load("pieces/Black_Bishop.png")
+
+    minutes = set_timer()
+    
+    selected = (-1, -1)
+    future_board = copy.deepcopy(game.board)
+    black_timer = Timer(minute=minutes, second=0, x=490, y=5)
+    white_timer = Timer(minute=minutes, second=0, x=490, y=440)
+    start_tick = pygame.time.get_ticks()
+
+    milliseconds = 0.0
+    last_turn = "white"
+    last_pawns = game.find_pawns()
+    game.best_move_hist += [stockfish.get_best_move(), stockfish.get_best_move()]
+    game.good_move_hist += [stockfish.get_top_moves(4), stockfish.get_top_moves(4)]
+    last_num_pieces = 32
+    while True:
+        await game_loop()
+        await asyncio.sleep(0)
 
 asyncio.run(main())

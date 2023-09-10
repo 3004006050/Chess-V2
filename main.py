@@ -40,7 +40,7 @@ class Timer:
             self.second -= 1
 
     def draw(self, screen):
-        timer_label = font.render(f"{self.minute}:{self.second}", 1,
+        timer_label = font.render(f"{self.minute:02}:{self.second:02}", 1,
                                   (178, 34, 34))
         screen.blit(timer_label, (self.x, self.y))
 
@@ -1172,3 +1172,4 @@ then change coords to selected piece
 if selected==a piece: piece 
 
 """
+    

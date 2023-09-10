@@ -1,5 +1,10 @@
 import json
+
 def read_config():
-  file = open("chessassets\config.json")
-  text = file.read()
-  return json.loads(text)
+
+  with open(r"D:\\Chess\\chessassets\\config.json", "r") as param_files:
+    text = json.load(param_files)
+
+    return text
+
+
